@@ -38,20 +38,35 @@ if __name__ == "__main__":
     # Start Webhook in a separate thread
     threading.Thread(target=start_webhook, daemon=True).start()
     bot.run()
-from pyrogram import Client
 import os
+import asyncio
+from pyrogram import Client, filters
+from flask import Flask
+from threading import Thread
 
-# Sirf test karne ke liye
+# --- Flask Server (Render Health Check ke liye) ---
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is Alive!"
+
+def run_flask():
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
+# --- Telegram Bot Logic ---
 API_ID = int(os.environ.get("API_ID", 0))
 API_HASH = os.environ.get("API_HASH", "")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
-app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+bot = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-@app.on_message()
-async def hello(client, message):
-    await message.reply_text("Bot is Running on Render!")
+@bot.on_message(filters.command("start"))
+async def start(client, message):
+    await message.reply_text("Hello! Bot is running perfectly on Render. ✅")
 
 if __name__ == "__main__":
-    print("Bot starting...")
-    app.run()
+    # Flask ko alag thread mein chalayein
+    Thread(target=run_flask).start()
+    print("Starting Bot...")
+    bot.run()
